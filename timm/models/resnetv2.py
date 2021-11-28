@@ -305,7 +305,7 @@ def is_stem_deep(stem_type):
 
 
 def create_resnetv2_stem(
-        in_chs, out_chs=64, stem_type='', preact=True,
+        in_chs, out_chs=64, stem_type='', preact=True, act_layer=nn.ReLU,
         conv_layer=StdConv2d, norm_layer=partial(GroupNormAct, num_groups=32)):
     stem = OrderedDict()
     assert stem_type in ('', 'fixed', 'same', 'deep', 'deep_fixed', 'deep_same', 'tiered')
@@ -318,17 +318,17 @@ def create_resnetv2_stem(
         else:
             stem_chs = (out_chs // 2, out_chs // 2)  # 'D' ResNets
         stem['conv1'] = conv_layer(in_chs, stem_chs[0], kernel_size=3, stride=2)
-        stem['norm1'] = norm_layer(stem_chs[0])
+        stem['norm1'] = norm_layer(stem_chs[0], act_layer=act_layer)
         stem['conv2'] = conv_layer(stem_chs[0], stem_chs[1], kernel_size=3, stride=1)
-        stem['norm2'] = norm_layer(stem_chs[1])
+        stem['norm2'] = norm_layer(stem_chs[1], act_layer=act_layer)
         stem['conv3'] = conv_layer(stem_chs[1], out_chs, kernel_size=3, stride=1)
         if not preact:
-            stem['norm3'] = norm_layer(out_chs)
+            stem['norm3'] = norm_layer(out_chs, act_layer=act_layer)
     else:
         # The usual 7x7 stem conv
         stem['conv'] = conv_layer(in_chs, out_chs, kernel_size=7, stride=2)
         if not preact:
-            stem['norm'] = norm_layer(out_chs)
+            stem['norm'] = norm_layer(out_chs, act_layer=act_layer)
 
     if 'fixed' in stem_type:
         # 'fixed' SAME padding approximation that is used in BiT models
@@ -362,7 +362,8 @@ class ResNetV2(nn.Module):
         self.feature_info = []
         stem_chs = make_div(stem_chs * wf)
         self.stem = create_resnetv2_stem(
-            in_chans, stem_chs, stem_type, preact, conv_layer=conv_layer, norm_layer=norm_layer)
+            in_chans, stem_chs, stem_type, preact, act_layer=act_layer, conv_layer=conv_layer,
+            norm_layer=norm_layer)
         stem_feat = ('stem.conv3' if is_stem_deep(stem_type) else 'stem.conv') if preact else 'stem.norm'
         self.feature_info.append(dict(num_chs=stem_chs, reduction=2, module=stem_feat))
 
