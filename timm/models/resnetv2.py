@@ -164,11 +164,11 @@ class PreActBottleneck(nn.Module):
         else:
             self.downsample = None
 
-        self.norm1 = norm_layer(in_chs)
+        self.norm1 = norm_layer(in_chs, act_layer=act_layer)
         self.conv1 = conv_layer(in_chs, mid_chs, 1)
-        self.norm2 = norm_layer(mid_chs)
+        self.norm2 = norm_layer(mid_chs, act_layer=act_layer)
         self.conv2 = conv_layer(mid_chs, mid_chs, 3, stride=stride, dilation=first_dilation, groups=groups)
-        self.norm3 = norm_layer(mid_chs)
+        self.norm3 = norm_layer(mid_chs, act_layer=act_layer)
         self.conv3 = conv_layer(mid_chs, out_chs, 1)
         self.drop_path = DropPath(drop_path_rate) if drop_path_rate > 0 else nn.Identity()
 
@@ -213,9 +213,9 @@ class Bottleneck(nn.Module):
             self.downsample = None
 
         self.conv1 = conv_layer(in_chs, mid_chs, 1)
-        self.norm1 = norm_layer(mid_chs)
+        self.norm1 = norm_layer(mid_chs, act_layer=act_layer)
         self.conv2 = conv_layer(mid_chs, mid_chs, 3, stride=stride, dilation=first_dilation, groups=groups)
-        self.norm2 = norm_layer(mid_chs)
+        self.norm2 = norm_layer(mid_chs, act_layer=act_layer)
         self.conv3 = conv_layer(mid_chs, out_chs, 1)
         self.norm3 = norm_layer(out_chs, apply_act=False)
         self.drop_path = DropPath(drop_path_rate) if drop_path_rate > 0 else nn.Identity()
@@ -387,7 +387,7 @@ class ResNetV2(nn.Module):
             self.stages.add_module(str(stage_idx), stage)
 
         self.num_features = prev_chs
-        self.norm = norm_layer(self.num_features) if preact else nn.Identity()
+        self.norm = norm_layer(self.num_features, act_layer=act_layer) if preact else nn.Identity()
         self.head = ClassifierHead(
             self.num_features, num_classes, pool_type=global_pool, drop_rate=self.drop_rate, use_conv=True)
 
